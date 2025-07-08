@@ -18,19 +18,21 @@ RUN ./mvnw dependency:go-offline
 COPY src src
 
 # Build the application - this creates the JAR in /app/target/
+# The spring-boot-maven-plugin will repackage it into an executable JAR.
+# The name will be artifactId-version.jar
 RUN ./mvnw install -DskipTests
 
 # --- Stage 2: Create the final runtime image ---
-# Using a widely available OpenJDK 17 JRE image from Eclipse Temurin
 FROM eclipse-temurin:17-jre-focal
 
 WORKDIR /app
 
-# Copy only the built JAR file from the 'builder' stage
-COPY --from=builder /app/target/crypto-scanner-backend-0.0.1-SNAPSHOT.jar .
+# Copy only the built and REPACKAGED JAR file from the 'builder' stage
+# The JAR is located at /app/target/ and named cryptoscannerbackend-0.0.1-SNAPSHOT.jar
+COPY --from=builder /app/target/cryptoscannerbackend-0.0.1-SNAPSHOT.jar .
 
 # Expose the port your Spring Boot app runs on
 EXPOSE 8080
 
 # Command to run the application
-ENTRYPOINT ["java", "-jar", "crypto-scanner-backend-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "cryptoscannerbackend-0.0.1-SNAPSHOT.jar"]
