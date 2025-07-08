@@ -21,8 +21,8 @@ COPY src src
 RUN ./mvnw install -DskipTests
 
 # --- Stage 2: Create the final runtime image ---
-# Corrected: Changed from 17-jre-slim to 17-jre (Moved comment to its own line)
-FROM openjdk:17-jre
+# Using a widely available OpenJDK 17 JRE image from Eclipse Temurin
+FROM eclipse-temurin:17-jre-focal
 
 WORKDIR /app
 
