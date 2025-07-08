@@ -57,7 +57,7 @@
             cursor: not-allowed;
             box-shadow: none;
         }
-        .filter-button, .timeframe-button, .sensitivity-button, .chart-button { /* Combined styles */
+        .filter-button, .timeframe-button, .sensitivity-button, .chart-button, .auth-button { /* Combined styles */
             background-color: #4A5568; /* Gray-700 */
             color: white;
             padding: 8px 15px;
@@ -67,16 +67,16 @@
             border: 1px solid #6B7280; /* Gray-500 */
             transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
-        .filter-button:hover:not(:disabled), .timeframe-button:hover:not(:disabled), .sensitivity-button:hover:not(:disabled), .chart-button:hover:not(:disabled) {
+        .filter-button:hover:not(:disabled), .timeframe-button:hover:not(:disabled), .sensitivity-button:hover:not(:disabled), .chart-button:hover:not(:disabled), .auth-button:hover:not(:disabled) {
             background-color: #6B7280; /* Gray-500 */
             border-color: #9CA3AF; /* Gray-400 */
         }
-        .filter-button.active, .timeframe-button.active, .sensitivity-button.active {
+        .filter-button.active, .timeframe-button.active, .sensitivity-button.active, .auth-button.active {
             background-color: #4299E1; /* Blue-500 */
             border-color: #2B6CB0; /* Blue-700 */
             font-weight: 700;
         }
-        .filter-button:disabled, .timeframe-button:disabled, .sensitivity-button:disabled, .chart-button:disabled {
+        .filter-button:disabled, .timeframe-button:disabled, .sensitivity-button:disabled, .chart-button:disabled, .auth-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
@@ -140,18 +140,25 @@
             font-weight: 600;
             color: #9CA3AF; /* gray-400 */
         }
-        .param-input-group input[type="number"] {
-            width: 100px; /* Fixed width for number inputs */
+        .param-input-group input[type="number"],
+        .param-input-group input[type="text"],
+        .param-input-group input[type="email"],
+        .param-input-group input[type="password"] {
+            width: 100%; /* Make text inputs full width within their group */
+            max-width: 250px; /* Limit max width for forms */
             padding: 0.5rem 0.75rem;
             border-radius: 0.375rem; /* rounded-md */
             background-color: #4A5568; /* gray-700 */
             color: #E2E8F0; /* gray-200 */
             border: 1px solid #6B7280; /* gray-600 */
-            text-align: center;
+            text-align: left; /* Align text left for forms */
             font-size: 0.875rem; /* text-sm */
             transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
-        .param-input-group input[type="number"]:focus {
+        .param-input-group input[type="number"]:focus,
+        .param-input-group input[type="text"]:focus,
+        .param-input-group input[type="email"]:focus,
+        .param-input-group input[type="password"]:focus {
             outline: none;
             border-color: #4299E1; /* blue-500 */
             box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5); /* blue-500 with opacity */
@@ -237,54 +244,90 @@
         </p>
     </div>
 
-    <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
-        <button id="scanButton" class="scan-button">
-            <span id="spinner" class="spinner hidden"></span>
-            <span id="buttonText">Scan Coins via Backend</span>
-        </button>
-        <button id="clearButton" class="filter-button">Clear Results</button>
+    <!-- Authentication Section (Initially visible) -->
+    <div id="authSection" class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 max-w-md mx-auto">
+        <h2 id="authFormTitle" class="text-2xl font-bold text-blue-300 text-center mb-4">Login</h2>
+        <form id="authForm" class="flex flex-col gap-4">
+            <div class="param-input-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required class="w-full">
+            </div>
+            <div class="param-input-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required class="w-full">
+            </div>
+            <div id="emailGroup" class="param-input-group hidden">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" class="w-full">
+            </div>
+            <div id="planGroup" class="param-input-group hidden">
+                <label for="plan">Plan:</label>
+                <select id="plan" name="plan" class="w-full px-3 py-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="trial">3-Day Trial</option>
+                    <!-- <option value="premium">Premium (Requires Payment)</option> -->
+                </select>
+            </div>
+            <button type="submit" id="authSubmitButton" class="scan-button w-full">Login</button>
+        </form>
+        <p class="text-center mt-4">
+            <button id="toggleAuthMode" class="text-blue-400 hover:underline">Don't have an account? Register here.</button>
+        </p>
+        <p id="authMessage" class="text-center text-red-400 mt-4"></p>
     </div>
 
-    <div class="flex justify-center gap-3 mb-6 flex-wrap">
-        <span class="text-gray-300 font-semibold self-center">Timeframe:</span>
-        <button id="timeframe1hButton" class="timeframe-button" data-timeframe="1h">1H</button>
-        <button id="timeframe4hButton" class="timeframe-button active" data-timeframe="4h">4H</button>
-        <button id="timeframe1dButton" class="timeframe-button" data-timeframe="1d">1D</button>
-    </div>
-
-    <div class="flex justify-center gap-3 mb-6 flex-wrap">
-        <span class="text-gray-300 font-semibold self-center">Filter:</span>
-        <button id="showAllButton" class="filter-button active" data-filter="All">Show All</button>
-        <button id="showBuyingButton" class="filter-button" data-filter="Buying (Bullish)">Show Buying OB</button>
-        <button id="showSellingButton" class="filter-button" data-filter="Selling (Bearish)">Show Selling OB</button>
-    </div>
-
-    <!-- New section for Order Block Detection Parameters and Price Deviation -->
-    <div class="parameters-section">
-        <h2 class="text-2xl font-bold text-blue-300 text-center mb-4">Detection Sensitivity</h2>
-        <div class="parameters-grid mb-4">
-            <button class="sensitivity-button" data-sensitivity="lowest">Lowest Condition</button>
-            <button class="sensitivity-button" data-sensitivity="low-mid">Low Mid</button>
-            <button class="sensitivity-button active" data-sensitivity="mid">Mid</button>
-            <button class="sensitivity-button" data-sensitivity="mid-high">Mid High</button>
-            <button class="sensitivity-button" data-sensitivity="high">High</button>
-            <button class="sensitivity-button" data-sensitivity="extreme">Extreme Detection</button>
+    <!-- Scanner Section (Initially hidden) -->
+    <div id="scannerSection" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                <button id="scanButton" class="scan-button">
+                    <span id="spinner" class="spinner hidden"></span>
+                    <span id="buttonText">Scan Coins via Backend</span>
+                </button>
+                <button id="clearButton" class="filter-button">Clear Results</button>
+            </div>
+            <button id="logoutButton" class="auth-button bg-red-600 hover:bg-red-700">Logout</button>
         </div>
 
-        <!-- Removed individual parameter input fields here -->
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
-            <label for="priceDeviation" class="text-gray-300 font-semibold">Max Price Deviation (%):</label>
-            <input type="number" id="priceDeviation" value="20" min="0" max="100" class="w-24 px-3 py-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="flex justify-center gap-3 mb-6 flex-wrap">
+            <span class="text-gray-300 font-semibold self-center">Timeframe:</span>
+            <button id="timeframe1hButton" class="timeframe-button" data-timeframe="1h">1H</button>
+            <button id="timeframe4hButton" class="timeframe-button active" data-timeframe="4h">4H</button>
+            <button id="timeframe1dButton" class="timeframe-button" data-timeframe="1d">1D</button>
         </div>
-    </div>
+
+        <div class="flex justify-center gap-3 mb-6 flex-wrap">
+            <span class="text-gray-300 font-semibold self-center">Filter:</span>
+            <button id="showAllButton" class="filter-button active" data-filter="All">Show All</button>
+            <button id="showBuyingButton" class="filter-button" data-filter="Buying (Bullish)">Show Buying OB</button>
+            <button id="showSellingButton" class="filter-button" data-filter="Selling (Bearish)">Show Selling OB</button>
+        </div>
+
+        <!-- New section for Order Block Detection Parameters and Price Deviation -->
+        <div class="parameters-section">
+            <h2 class="text-2xl font-bold text-blue-300 text-center mb-4">Detection Sensitivity</h2>
+            <div class="parameters-grid mb-4">
+                <button class="sensitivity-button" data-sensitivity="lowest">Lowest Condition</button>
+                <button class="sensitivity-button" data-sensitivity="low-mid">Low Mid</button>
+                <button class="sensitivity-button active" data-sensitivity="mid">Mid</button>
+                <button class="sensitivity-button" data-sensitivity="mid-high">Mid High</button>
+                <button class="sensitivity-button" data-sensitivity="high">High</button>
+                <button class="sensitivity-button" data-sensitivity="extreme">Extreme Detection</button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
+                <label for="priceDeviation" class="text-gray-300 font-semibold">Max Price Deviation (%):</label>
+                <input type="number" id="priceDeviation" value="20" min="0" max="100" class="w-24 px-3 py-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
 
 
-    <p id="statusMessage" class="text-center text-gray-300 italic mb-6">Click "Scan Coins" to initiate a scan.</p>
-    <p id="errorMessage" class="text-center text-red-500 font-bold mb-6"></p>
+        <p id="statusMessage" class="text-center text-gray-300 italic mb-6">Click "Scan Coins" to initiate a scan.</p>
+        <p id="errorMessage" class="text-center text-red-500 font-bold mb-6"></p>
 
-    <div id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Scan results will be injected here -->
+        <div id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Scan results will be injected here -->
+        </div>
     </div>
 </div>
 
@@ -306,7 +349,27 @@
 
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.umd.js"></script>
 <script>
-    const BACKEND_API_BASE_URL = "http://localhost:8080/api/scan-order-blocks";
+    // --- Configuration ---
+    // IMPORTANT: Replace with your laptop's current local IP address
+    const API_BASE_URL = "http://YOUR_LAPTOP_CURRENT_IP:8080/api";
+
+    // --- DOM Elements (Authentication) ---
+    const authSection = document.getElementById('authSection');
+    const scannerSection = document.getElementById('scannerSection');
+    const authForm = document.getElementById('authForm');
+    const authFormTitle = document.getElementById('authFormTitle');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const emailGroup = document.getElementById('emailGroup');
+    const emailInput = document.getElementById('email');
+    const planGroup = document.getElementById('planGroup');
+    const planSelect = document.getElementById('plan');
+    const authSubmitButton = document.getElementById('authSubmitButton');
+    const toggleAuthModeButton = document.getElementById('toggleAuthMode');
+    const authMessage = document.getElementById('authMessage');
+    const logoutButton = document.getElementById('logoutButton');
+
+    // --- DOM Elements (Scanner - existing) ---
     const scanButton = document.getElementById('scanButton');
     const clearButton = document.getElementById('clearButton');
     const showAllButton = document.getElementById('showAllButton');
@@ -336,17 +399,182 @@
     let currentTimeframe = '4h';
     let currentSensitivity = 'mid'; // Default sensitivity
     let maxPriceDeviationPercent = 20; // Default max price deviation
+    let isRegisterMode = false; // State for auth form
 
     // Predefined parameter presets for different sensitivities
-    // All parameters are now included here
     const sensitivityPresets = {
-      'lowest': { minBodyRatio: 0.001, minPriceChange: 0.000001, volumeFactor: 0.01, requireBOS: false, requireC3ClosePastC2: false, requireFVG: false, requireUnmitigated: true, minFvgDepthRatio: 0.001 },
+      'lowest': { minBodyRatio: 0.001, minPriceChange: 0.000001, volumeFactor: 0.01, requireBOS: false, requireC3ClosePastC2: false, requireFVG: false, requireUnmitigated: false, minFvgDepthRatio: 0.001 }, // Relaxed for lowest
       'low-mid': { minBodyRatio: 0.10, minPriceChange: 0.0003, volumeFactor: 0.4, requireBOS: true, requireC3ClosePastC2: true, requireFVG: true, requireUnmitigated: true, minFvgDepthRatio: 0.02 },
       'mid': { minBodyRatio: 0.15, minPriceChange: 0.0005, volumeFactor: 0.6, requireBOS: true, requireC3ClosePastC2: true, requireFVG: true, requireUnmitigated: true, minFvgDepthRatio: 0.05 },
       'mid-high': { minBodyRatio: 0.20, minPriceChange: 0.001, volumeFactor: 0.8, requireBOS: true, requireC3ClosePastC2: true, requireFVG: true, requireUnmitigated: true, minFvgDepthRatio: 0.08 },
       'high': { minBodyRatio: 0.25, minPriceChange: 0.002, volumeFactor: 1.0, requireBOS: true, requireC3ClosePastC2: true, requireFVG: true, requireUnmitigated: true, minFvgDepthRatio: 0.10 },
       'extreme': { minBodyRatio: 0.30, minPriceChange: 0.003, volumeFactor: 1.2, requireBOS: true, requireC3ClosePastC2: true, requireFVG: true, requireUnmitigated: true, minFvgDepthRatio: 0.15 }
     };
+
+
+    // --- Authentication Functions ---
+
+    function showAuthSection() {
+        authSection.classList.remove('hidden');
+        scannerSection.classList.add('hidden');
+        authMessage.textContent = '';
+        usernameInput.value = '';
+        passwordInput.value = '';
+        emailInput.value = '';
+        localStorage.removeItem('jwtToken');
+        localStorage.removeItem('username');
+        localStorage.removeItem('roles');
+        localStorage.removeItem('userId'); // Clear user ID too
+    }
+
+    function showScannerSection() {
+        authSection.classList.add('hidden');
+        scannerSection.classList.remove('hidden');
+        statusMessage.textContent = `Welcome, ${localStorage.getItem('username')}! Click "Scan Coins" to initiate a scan.`;
+        errorMessage.textContent = '';
+        // Optionally fetch user status here to update UI for premium/trial
+        fetchUserStatus();
+    }
+
+    async function fetchUserStatus() {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            console.log("No token found, cannot fetch user status.");
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/user/status`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Failed to fetch user status:", errorData.message);
+                // If token is invalid or expired, force logout
+                if (response.status === 401 || response.status === 403) {
+                    showAuthSection();
+                    authMessage.textContent = "Session expired or invalid. Please log in again.";
+                }
+                return;
+            }
+
+            const userData = await response.json();
+            console.log("User status:", userData);
+            // You can use userData (e.g., userData.isPremium, userData.trialActive)
+            // to enable/disable features in the scanner section here.
+            // For example, if not premium and not trial, disable interval buttons other than 4h
+            if (!userData.isPremium && !userData.trialActive) {
+                timeframe1hButton.disabled = true;
+                timeframe1dButton.disabled = true;
+                if (currentTimeframe !== '4h') {
+                    setTimeframe('4h'); // Force 4h for non-premium/non-trial
+                }
+                statusMessage.textContent = `Welcome, ${userData.username}! Your trial has expired or you are not premium. Only 4H scans available.`;
+            } else if (userData.trialActive) {
+                 statusMessage.textContent = `Welcome, ${userData.username}! Your trial expires on ${new Date(userData.trialExpiryDate).toLocaleDateString()}.`;
+                 timeframe1hButton.disabled = false;
+                 timeframe1dButton.disabled = false;
+            } else if (userData.isPremium) {
+                 statusMessage.textContent = `Welcome, ${userData.username}! You have premium access.`;
+                 timeframe1hButton.disabled = false;
+                 timeframe1dButton.disabled = false;
+            }
+
+
+        } catch (error) {
+            console.error("Error fetching user status:", error);
+            authMessage.textContent = "Error connecting to backend for user status. Please try again.";
+        }
+    }
+
+
+    async function handleAuthSubmit(event) {
+        event.preventDefault();
+        authMessage.textContent = ''; // Clear previous messages
+        authSubmitButton.disabled = true;
+
+        const username = usernameInput.value;
+        const password = passwordInput.value;
+        const email = emailInput.value;
+        const plan = planSelect.value;
+
+        let endpoint = isRegisterMode ? `${API_BASE_URL}/auth/register` : `${API_BASE_URL}/auth/login`; // Corrected /auth/login
+        let body = { username, password };
+
+        if (isRegisterMode) {
+            body.email = email;
+            body.plan = plan;
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                authMessage.style.color = '#48BB78'; // Green for success
+                authMessage.textContent = data.message || (isRegisterMode ? "Registration successful!" : "Login successful!");
+
+                if (!isRegisterMode && data.token) { // If login and token received
+                    localStorage.setItem('jwtToken', data.token);
+                    localStorage.setItem('username', data.username);
+                    localStorage.setItem('userId', data.id); // Store user ID if available
+                    localStorage.setItem('roles', JSON.stringify(data.roles)); // Store roles
+                    showScannerSection();
+                } else if (isRegisterMode) {
+                    // After successful registration, switch to login mode
+                    isRegisterMode = false;
+                    authFormTitle.textContent = 'Login';
+                    authSubmitButton.textContent = 'Login';
+                    emailGroup.classList.add('hidden');
+                    planGroup.classList.add('hidden');
+                    toggleAuthModeButton.textContent = "Don't have an account? Register here.";
+                    authMessage.textContent += " Please log in now.";
+                }
+
+            } else {
+                authMessage.style.color = '#EF4444'; // Red for error
+                authMessage.textContent = data.message || "An error occurred.";
+            }
+        } catch (error) {
+            authMessage.style.color = '#EF4444'; // Red for error
+            authMessage.textContent = `Network error: ${error.message}. Please ensure backend is running.`;
+            console.error("Auth fetch error:", error);
+        } finally {
+            authSubmitButton.disabled = false;
+        }
+    }
+
+    function toggleAuthFormMode() {
+        isRegisterMode = !isRegisterMode;
+        if (isRegisterMode) {
+            authFormTitle.textContent = 'Register';
+            authSubmitButton.textContent = 'Register';
+            emailGroup.classList.remove('hidden');
+            planGroup.classList.remove('hidden');
+            toggleAuthModeButton.textContent = "Already have an account? Login here.";
+        } else {
+            authFormTitle.textContent = 'Login';
+            authSubmitButton.textContent = 'Login';
+            emailGroup.classList.add('hidden');
+            planGroup.classList.add('hidden');
+            toggleAuthModeButton.textContent = "Don't have an account? Register here.";
+        }
+        authMessage.textContent = ''; // Clear messages on mode switch
+    }
+
+    function handleLogout() {
+        showAuthSection();
+        authMessage.textContent = "You have been logged out.";
+    }
 
 
     // --- Function Definitions (Order matters for dependencies) ---
@@ -386,7 +614,9 @@
                      data-ob-open="${coin.obCandleOpen || ''}"
                      data-ob-high="${coin.obCandleHigh || ''}"
                      data-ob-low="${coin.obCandleLow || ''}"
-                     data-ob-close="${coin.obCandleClose || ''}">
+                     data-ob-close="${coin.obCandleClose || ''}"
+                     data-ob-zone-start="${coin.obZoneStart || ''}"
+                     data-ob-zone-end="${coin.obZoneEnd || ''}">
                     <div class="flex justify-between items-center mb-3">
                         <h2 class="text-2xl font-bold text-blue-300">${coin.name || 'N/A'} (${coin.id || 'N/A'})</h2>
                         <span class="text-lg font-semibold text-gray-300">Vol: ${coin.volume || 'N/A'}</span>
@@ -480,6 +710,14 @@
     }
 
     async function fetchOrderBlocks() {
+        // Check for token before fetching
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            errorMessage.textContent = "Please log in to use the scanner.";
+            showAuthSection(); // Redirect to login if no token
+            return;
+        }
+
         // Disable all interactive elements during scan
         scanButton.disabled = true;
         clearButton.disabled = true;
@@ -511,7 +749,11 @@
 
 
         try {
-            const response = await fetch(`${BACKEND_API_BASE_URL}?interval=${currentTimeframe}&minBodyRatio=${minBodyRatio}&minPriceChange=${minPriceChange}&volumeFactor=${volumeFactor}&requireBOS=${requireBOS}&requireC3ClosePastC2=${requireC3ClosePastC2}&requireFVG=${requireFVG}&requireUnmitigated=${requireUnmitigated}&minFvgDepthRatio=${minFvgDepthRatio}`);
+            const response = await fetch(`${API_BASE_URL}/scan-order-blocks?interval=${currentTimeframe}&minBodyRatio=${minBodyRatio}&minPriceChange=${minPriceChange}&volumeFactor=${volumeFactor}&requireBOS=${requireBOS}&requireC3ClosePastC2=${requireC3ClosePastC2}&requireFVG=${requireFVG}&requireUnmitigated=${requireUnmitigated}&minFvgDepthRatio=${minFvgDepthRatio}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}` // Include JWT for authentication
+                }
+            });
 
             if (!response.ok) {
                 let errorDetail = `Status: ${response.status} ${response.statusText || 'Unknown Error'}`;
@@ -531,7 +773,7 @@
 
         } catch (err) {
             statusMessage.textContent = '';
-            errorMessage.textContent = `Connection/Data Error: ${err.message}. Please ensure your Java backend is running and accessible at "${BACKEND_API_BASE_URL}".`;
+            errorMessage.textContent = `Connection/Data Error: ${err.message}. Please ensure your Java backend is running and accessible at "${API_BASE_URL}".`;
             console.error("Frontend fetch error:", err);
             allScanResults = []; // Clear results on error
         } finally {
@@ -557,15 +799,16 @@
       const obHigh = card.dataset.obHigh;
       const obLow = card.dataset.obLow;
       const obClose = card.dataset.obClose;
+      const obZoneStart = card.dataset.obZoneStart;
+      const obZoneEnd = card.dataset.obZoneEnd;
+
 
       // Set modal title and OB info
       modalTitle.textContent = `${coinName} (${symbol}) Chart - ${timeframe.toUpperCase()}`;
 
       let obZoneInfo = '';
-      if (obType !== 'None' && obOpen && obHigh && obLow && obClose) {
-          const obZoneStart = parseFloat(obType === 'Buying (Bullish)' ? obOpen : obOpen).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
-          const obZoneEnd = parseFloat(obType === 'Buying (Bullish)' ? obLow : obHigh).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
-          obZoneInfo = ` | OB Zone: $${obZoneStart} - $${obZoneEnd}`;
+      if (obType !== 'None' && obZoneStart && obZoneEnd) {
+          obZoneInfo = ` | OB Zone: $${parseFloat(obZoneStart).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} - $${parseFloat(obZoneEnd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`;
       }
 
       modalOBInfo.innerHTML = `Order Block Status: <span class="${
@@ -620,7 +863,15 @@
     setTimeframe(currentTimeframe); // Set initial timeframe button active
     setSensitivity(currentSensitivity); // Set initial sensitivity button active
 
-    // Event Listeners
+    // Check if user is already logged in (e.g., from a previous session)
+    if (localStorage.getItem('jwtToken')) {
+        showScannerSection();
+    } else {
+        showAuthSection();
+    }
+
+
+    // --- Event Listeners ---
     scanButton.addEventListener('click', fetchOrderBlocks);
     clearButton.addEventListener('click', clearResults);
     showAllButton.addEventListener('click', () => setFilter('All'));
@@ -636,7 +887,6 @@
       });
     });
 
-    // Event listener for the new price deviation input
     priceDeviationInput.addEventListener('change', (event) => {
         const newValue = parseFloat(event.target.value);
         if (!isNaN(newValue) && newValue >= 0 && newValue <= 100) {
@@ -648,16 +898,17 @@
         }
     });
 
-    // Removed individual input change listeners as they are no longer needed
-
-
     closeModalButton.addEventListener('click', closeChartModal);
-    // Close modal if clicked outside content
     chartModal.addEventListener('click', (event) => {
       if (event.target === chartModal) {
-        closeModal();
+        closeChartModal(); // Use closeChartModal for consistency
       }
     });
+
+    // Authentication Event Listeners
+    authForm.addEventListener('submit', handleAuthSubmit);
+    toggleAuthModeButton.addEventListener('click', toggleAuthFormMode);
+    logoutButton.addEventListener('click', handleLogout);
 
     // Load TradingView widget script dynamically
     const script = document.createElement('script');
