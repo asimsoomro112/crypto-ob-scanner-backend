@@ -21,7 +21,7 @@ COPY src src
 RUN ./mvnw install -DskipTests
 
 # --- Stage 2: Create the final runtime image ---
-FROM openjdk:17-jre-slim
+FROM openjdk:17-jre # Corrected: Changed from 17-jre-slim to 17-jre
 
 WORKDIR /app
 
