@@ -20,8 +20,17 @@ public class PaymentController {
         // In a real application, you'd verify the transaction hash with a payment gateway.
         // For now, we'll just grant premium access directly.
         System.out.println("Received payment proof for user ID: " + request.getUserId() + " with TxID: " + request.getTransactionHash());
-        userService.grantPremiumAccess(request.getUserId()); // Ensure grantPremiumAccess takes String username or Long userId
-        return ResponseEntity.ok(new MessageResponse("Transaction hash submitted! Your access will be activated shortly after verification."));
+
+        // Assuming request.getUserId() actually contains the username for now.
+        // If it's a numeric ID, you'll need a userService.grantPremium(Long userId) method
+        // or to fetch the username from the ID first.
+        boolean success = userService.grantPremium(request.getUserId()); // Corrected method call
+
+        if (success) {
+            return ResponseEntity.ok(new MessageResponse("Transaction hash submitted! Your access will be activated shortly after verification."));
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Failed to process payment proof. User not found or update failed."));
+        }
     }
 
     // DTOs for PaymentController
@@ -29,6 +38,7 @@ public class PaymentController {
     public static class PaymentProofRequest {
         private String transactionHash;
         private String userId; // Changed to String to match frontend for now, or Long if you send user ID as Long
+        // IMPORTANT: If this is a numeric ID, userService.grantPremium needs adjustment
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor

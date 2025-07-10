@@ -5,73 +5,101 @@ import com.example.cryptoscannerbackend.model.User;
 import com.example.cryptoscannerbackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.List; // Import List
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 public class UserService {
+
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
-
-    @Transactional
-    public User save(User user) {
-        return userRepository.save(user);
-    }
-
-    @Transactional
     public Map<String, Object> getUserStatus(String username) {
-        Map<String, Object> status = new HashMap<>();
         Optional<User> userOptional = userRepository.findByUsername(username);
-
         if (userOptional.isPresent()) {
             User user = userOptional.get();
+            Map<String, Object> status = new HashMap<>();
             status.put("username", user.getUsername());
             status.put("isPremium", user.isPremium());
-
-            boolean trialActive = false;
-            String trialExpiry = null;
-
-            if (user.getRoles().contains(ERole.ROLE_TRIAL) && user.getTrialEndDate() != null) {
-                if (LocalDateTime.now().isBefore(user.getTrialEndDate())) {
-                    trialActive = true;
-                    trialExpiry = user.getTrialEndDate().toString();
-                } else {
-                    // Trial expired, remove ROLE_TRIAL
-                    user.getRoles().remove(ERole.ROLE_TRIAL);
-                    userRepository.save(user); // Persist the role change
-                }
-            }
+            boolean trialActive = user.getTrialEndDate() != null && user.getTrialEndDate().isAfter(LocalDateTime.now());
             status.put("trialActive", trialActive);
-            status.put("trialExpiryDate", trialExpiry);
-            status.put("roles", user.getRoles().stream().map(Enum::name).collect(Collectors.toSet()));
-
-        } else {
-            status.put("error", "User not found.");
+            status.put("trialExpiryDate", user.getTrialEndDate() != null ? user.getTrialEndDate().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() : null);
+            status.put("roles", user.getRoles());
+            return status;
         }
-        return status;
+        return new HashMap<>();
     }
 
-    @Transactional
-    public void grantPremiumAccess(String username) {
+    public boolean grantPremium(String username) {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             user.setPremium(true);
-            user.getRoles().add(ERole.ROLE_PREMIUM);
-            user.getRoles().remove(ERole.ROLE_TRIAL); // Remove trial role if upgrading
+            user.setTrialStartDate(null);
+            user.setTrialEndDate(null);
+
+            Set<ERole> roles = user.getRoles();
+            roles.add(ERole.ROLE_PREMIUM);
+            roles.remove(ERole.ROLE_TRIAL);
+            roles.remove(ERole.ROLE_USER);
+            user.setRoles(roles);
+
             userRepository.save(user);
-            System.out.println("User " + username + " granted premium access.");
-        } else {
-            System.err.println("User " + username + " not found for premium access grant.");
+            System.out.println("Granted premium access to user: " + username);
+            return true;
         }
+        return false;
+    }
+
+    public boolean revokePremium(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setPremium(false);
+            user.setTrialStartDate(null);
+            user.setTrialEndDate(null);
+
+            Set<ERole> roles = user.getRoles();
+            roles.remove(ERole.ROLE_PREMIUM);
+            roles.add(ERole.ROLE_USER);
+            user.setRoles(roles);
+
+            userRepository.save(user);
+            System.out.println("Revoked premium access from user: " + username);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean activateTrial(String username, int trialDays) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setTrialStartDate(LocalDateTime.now());
+            user.setTrialEndDate(LocalDateTime.now().plusDays(trialDays));
+            user.setPremium(false);
+
+            Set<ERole> roles = user.getRoles();
+            roles.add(ERole.ROLE_TRIAL);
+            roles.remove(ERole.ROLE_USER);
+            roles.remove(ERole.ROLE_PREMIUM);
+            user.setRoles(roles);
+
+            userRepository.save(user);
+            System.out.println("Activated " + trialDays + "-day trial for user: " + username);
+            return true;
+        }
+        return false;
+    }
+
+    // NEW METHOD: Get all users from the repository
+    public List<User> getAllUsers() {
+        return userRepository.findAll(); // JpaRepository provides findAll()
     }
 }

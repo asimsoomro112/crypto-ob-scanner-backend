@@ -1,39 +1,36 @@
-# --- Stage 1: Build the application ---
-FROM openjdk:17-jdk-slim AS builder
+    # Use an official OpenJDK runtime as a parent image
+    FROM openjdk:21-jdk-slim
 
-WORKDIR /app
+    # Set the working directory in the container
+    WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first to leverage Docker layer caching
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
+    # Copy the Maven wrapper files to enable building inside Docker
+    COPY mvnw .
+    COPY .mvn .mvn
 
-# Grant execute permissions to mvnw
-RUN chmod +x mvnw
+    # Copy the pom.xml and download dependencies to leverage Docker layer caching
+    # This step only runs if pom.xml changes, speeding up subsequent builds
+    COPY pom.xml .
+    RUN ./mvnw dependency:go-offline -B
 
-# Download dependencies (only if pom.xml changes)
-RUN ./mvnw dependency:go-offline
+    # Copy the rest of the application source code
+    COPY src src
 
-# Copy the rest of the application source code
-COPY src src
+    # Build the Spring Boot application
+    # The -DskipTests is important to avoid running tests during the build, which can fail in a container
+    # The --offline flag ensures Maven uses previously downloaded dependencies
+    RUN ./mvnw package -DskipTests --offline
 
-# Build the application - this creates the JAR in /app/target/
-# The spring-boot-maven-plugin will repackage it into an executable JAR.
-# The name will be artifactId-version.jar
-RUN ./mvnw install -DskipTests
+    # Specify the JAR file name. Adjust if your artifactId or version changes.
+    # It's usually target/<artifactId>-<version>.jar
+    ARG JAR_FILE=target/cryptoscannerbackend-0.0.1-SNAPSHOT.jar
 
-# --- Stage 2: Create the final runtime image ---
-FROM eclipse-temurin:17-jre-focal
+    # Copy the built JAR file into the container
+    COPY ${JAR_FILE} app.jar
 
-WORKDIR /app
+    # Expose the port your Spring Boot application runs on
+    EXPOSE 8080
 
-# Copy only the built and REPACKAGED JAR file from the 'builder' stage
-# CORRECTED JAR NAME: removed hyphen between 'crypto' and 'scanner'
-COPY --from=builder /app/target/cryptoscannerbackend-0.0.1-SNAPSHOT.jar .
-
-# Expose the port your Spring Boot app runs on
-EXPOSE 8080
-
-# Command to run the application
-# CORRECTED JAR NAME: removed hyphen between 'crypto' and 'scanner'
-ENTRYPOINT ["java", "-jar", "cryptoscannerbackend-0.0.1-SNAPSHOT.jar"]
+    # Define the command to run your application
+    ENTRYPOINT ["java", "-jar", "app.jar"]
+    

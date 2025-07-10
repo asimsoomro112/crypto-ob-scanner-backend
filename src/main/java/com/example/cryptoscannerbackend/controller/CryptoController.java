@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 @CrossOrigin(origins = "*", maxAge = 3600) // Temporarily allow all origins for local testing, change to "https://ccscanner.netlify.app" for production
 public class CryptoController {
 
+
     @Autowired
     private BinanceApiClient binanceApiClient;
     @Autowired
@@ -34,6 +35,14 @@ public class CryptoController {
     private UserService userService;
 
     private final ConcurrentMap<String, OrderBlockResult> latestScanResults = new ConcurrentHashMap<>();
+
+    // --- NEW HEALTH CHECK ENDPOINT ---
+    @GetMapping("/health")
+    public String healthCheck() {
+        return "Backend is healthy and running!";
+    }
+    // --- END NEW HEALTH CHECK ENDPOINT ---
+
 
     @GetMapping("/scan-order-blocks")
     public List<OrderBlockResult> getOrderBlockScanResults(
@@ -156,4 +165,6 @@ public class CryptoController {
             e.printStackTrace();
         }
     }
+
 }
+    

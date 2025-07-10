@@ -57,7 +57,7 @@
             cursor: not-allowed;
             box-shadow: none;
         }
-        .filter-button, .timeframe-button, .sensitivity-button, .chart-button, .auth-button { /* Combined styles */
+        .filter-button, .timeframe-button, .sensitivity-button, .chart-button, .auth-button, .payment-button { /* Combined styles */
             background-color: #4A5568; /* Gray-700 */
             color: white;
             padding: 8px 15px;
@@ -67,7 +67,7 @@
             border: 1px solid #6B7280; /* Gray-500 */
             transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
-        .filter-button:hover:not(:disabled), .timeframe-button:hover:not(:disabled), .sensitivity-button:hover:not(:disabled), .chart-button:hover:not(:disabled), .auth-button:hover:not(:disabled) {
+        .filter-button:hover:not(:disabled), .timeframe-button:hover:not(:disabled), .sensitivity-button:hover:not(:disabled), .chart-button:hover:not(:disabled), .auth-button:hover:not(:disabled), .payment-button:hover:not(:disabled) {
             background-color: #6B7280; /* Gray-500 */
             border-color: #9CA3AF; /* Gray-400 */
         }
@@ -76,7 +76,7 @@
             border-color: #2B6CB0; /* Blue-700 */
             font-weight: 700;
         }
-        .filter-button:disabled, .timeframe-button:disabled, .sensitivity-button:disabled, .chart-button:disabled, .auth-button:disabled {
+        .filter-button:disabled, .timeframe-button:disabled, .sensitivity-button:disabled, .chart-button:disabled, .auth-button:disabled, .payment-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
@@ -226,15 +226,51 @@
                 max-height: 400px; /* Adjust max height for mobile */
             }
         }
+        /* Payment Modal Specific Styles */
+        #paymentModal .modal-content {
+            max-width: 500px; /* Smaller modal for payment */
+            text-align: center;
+        }
+        #paymentModal .payment-info {
+            background-color: #1a202c;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        /* Admin Panel Styles */
+        #adminPanel {
+            background-color: #2D3748;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 1.5rem;
+        }
+        .user-table-header th {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #4A5568;
+            color: #A0AEC0;
+        }
+        .user-table-row td {
+            padding: 0.75rem;
+            text-align: left; /* Ensure text aligns left */
+            border-bottom: 1px solid #2D3748;
+        }
+        .user-table-row:last-child td {
+            border-bottom: none;
+        }
+        .user-table-row button {
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
 <div class="container">
     <div class="header-area">
         <h1 class="text-4xl font-bold text-center text-blue-400 mb-6">
-                <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                    Crypto Order Block Scanner
-                </span>
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                        Crypto Order Block Scanner
+                    </span>
         </h1>
 
         <p class="text-center text-gray-400 mb-8">
@@ -264,7 +300,7 @@
                 <label for="plan">Plan:</label>
                 <select id="plan" name="plan" class="w-full px-3 py-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="trial">3-Day Trial</option>
-                    <!-- <option value="premium">Premium (Requires Payment)</option> -->
+                    <option value="premium">Premium</option>
                 </select>
             </div>
             <button type="submit" id="authSubmitButton" class="scan-button w-full">Login</button>
@@ -273,6 +309,10 @@
             <button id="toggleAuthMode" class="text-blue-400 hover:underline">Don't have an account? Register here.</button>
         </p>
         <p id="authMessage" class="text-center text-red-400 mt-4"></p>
+        <!-- NEW: Temporary Admin Registration Button -->
+        <p class="text-center mt-2">
+            <button id="registerAdminButton" class="text-purple-400 hover:underline text-sm">Register First Admin (Temporary)</button>
+        </p>
     </div>
 
     <!-- Scanner Section (Initially hidden) -->
@@ -328,6 +368,11 @@
         <div id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Scan results will be injected here -->
         </div>
+
+        <!-- NEW: Admin Panel Button -->
+        <div class="text-center mt-8">
+            <button id="adminPanelButton" class="auth-button hidden">User Management (Admin)</button>
+        </div>
     </div>
 </div>
 
@@ -346,12 +391,63 @@
     </div>
 </div>
 
+<!-- Payment Modal Structure -->
+<div id="paymentModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-button" id="closePaymentModal">&times;</span>
+        <h3 class="text-2xl font-bold text-blue-300 text-center mb-4">Premium Plan Payment</h3>
+        <p class="text-gray-300 mb-4">
+            To activate your Premium plan, please send payment to the address below.
+            After payment, submit your transaction hash.
+        </p>
+        <div class="payment-info p-4 rounded-md bg-gray-700 text-gray-200 mb-4">
+            <p class="font-semibold">Payment Address (USDT TRC20):</p>
+            <p class="break-all text-green-400 text-lg font-mono">TLP9p4PqF4Y9p4PqF4Y9p4PqF4Y9p4PqF4Y9p4PqF4Y</p> <!-- REPLACE WITH YOUR ACTUAL ADDRESS -->
+            <p class="mt-2 font-semibold">Amount: $50 USD</p>
+        </div>
+        <form id="paymentProofForm" class="flex flex-col gap-4">
+            <div class="param-input-group">
+                <label for="transactionHash">Transaction Hash (TxID):</label>
+                <input type="text" id="transactionHash" name="transactionHash" required class="w-full">
+            </div>
+            <button type="submit" id="submitPaymentProofButton" class="payment-button w-full">Submit Payment Proof</button>
+        </form>
+        <p id="paymentMessage" class="text-center text-red-400 mt-4"></p>
+    </div>
+</div>
+
+<!-- Admin Panel Modal Structure -->
+<div id="adminPanelModal" class="modal hidden">
+    <div class="modal-content max-w-4xl">
+        <span class="close-button" id="closeAdminPanelModal">&times;</span>
+        <h3 class="text-2xl font-bold text-blue-300 text-center mb-4">User Management Panel</h3>
+        <p id="adminMessage" class="text-center text-red-400 mb-4"></p>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-gray-700 rounded-lg">
+                <thead>
+                <tr class="user-table-header">
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Premium</th>
+                    <th>Trial Active</th>
+                    <th>Trial Expiry</th>
+                    <th>Roles</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="userTableBody">
+                <!-- User data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.umd.js"></script>
 <script>
     // --- Configuration ---
-    // IMPORTANT: Replace with your laptop's current local IP address
-    const API_BASE_URL = "http://YOUR_LAPTOP_CURRENT_IP:8080/api";
+    const API_BASE_URL = "https://YOUR_RENDER_BACKEND_URL/api"; // IMPORTANT: Replace with your actual Render backend URL after deployment!
 
     // --- DOM Elements (Authentication) ---
     const authSection = document.getElementById('authSection');
@@ -368,6 +464,7 @@
     const toggleAuthModeButton = document.getElementById('toggleAuthMode');
     const authMessage = document.getElementById('authMessage');
     const logoutButton = document.getElementById('logoutButton');
+    const registerAdminButton = document.getElementById('registerAdminButton'); // Keep this uncommented for first admin registration on Render
 
     // --- DOM Elements (Scanner - existing) ---
     const scanButton = document.getElementById('scanButton');
@@ -393,6 +490,21 @@
     const modalOBInfo = document.getElementById('modalOBInfo');
     const tradingViewLink = document.getElementById('tradingViewLink');
 
+    // Payment Modal elements
+    const paymentModal = document.getElementById('paymentModal');
+    const closePaymentModalButton = document.getElementById('closePaymentModal');
+    const paymentProofForm = document.getElementById('paymentProofForm');
+    const transactionHashInput = document.getElementById('transactionHash');
+    const submitPaymentProofButton = document.getElementById('submitPaymentProofButton');
+    const paymentMessage = document.getElementById('paymentMessage');
+
+    // Admin Panel elements (NEW)
+    const adminPanelButton = document.getElementById('adminPanelButton');
+    const adminPanelModal = document.getElementById('adminPanelModal');
+    const closeAdminPanelModalButton = document.getElementById('closeAdminPanelModal');
+    const userTableBody = document.getElementById('userTableBody');
+    const adminMessage = document.getElementById('adminMessage');
+
 
     let allScanResults = [];
     let currentFilter = 'All';
@@ -400,6 +512,7 @@
     let currentSensitivity = 'mid'; // Default sensitivity
     let maxPriceDeviationPercent = 20; // Default max price deviation
     let isRegisterMode = false; // State for auth form
+    let isAdminRegisterMode = false; // NEW: State for admin registration mode
 
     // Predefined parameter presets for different sensitivities
     const sensitivityPresets = {
@@ -417,6 +530,8 @@
     function showAuthSection() {
         authSection.classList.remove('hidden');
         scannerSection.classList.add('hidden');
+        paymentModal.classList.add('hidden');
+        adminPanelModal.classList.add('hidden'); // Ensure admin modal is hidden
         authMessage.textContent = '';
         usernameInput.value = '';
         passwordInput.value = '';
@@ -424,17 +539,200 @@
         localStorage.removeItem('jwtToken');
         localStorage.removeItem('username');
         localStorage.removeItem('roles');
-        localStorage.removeItem('userId'); // Clear user ID too
+        localStorage.removeItem('userId');
+        adminPanelButton.classList.add('hidden'); // Hide admin button on logout
+        // Reset auth form to login mode
+        isRegisterMode = false;
+        isAdminRegisterMode = false; // NEW: Reset admin register mode
+        authFormTitle.textContent = 'Login';
+        authSubmitButton.textContent = 'Login';
+        emailGroup.classList.add('hidden');
+        planGroup.classList.add('hidden');
+        toggleAuthModeButton.textContent = "Don't have an account? Register here.";
+        registerAdminButton.classList.remove('hidden'); // Show admin button when in login mode
     }
 
     function showScannerSection() {
         authSection.classList.add('hidden');
+        paymentModal.classList.add('hidden');
+        adminPanelModal.classList.add('hidden'); // Ensure admin modal is hidden
         scannerSection.classList.remove('hidden');
         statusMessage.textContent = `Welcome, ${localStorage.getItem('username')}! Click "Scan Coins" to initiate a scan.`;
         errorMessage.textContent = '';
-        // Optionally fetch user status here to update UI for premium/trial
-        fetchUserStatus();
+        fetchUserStatus(); // Fetch status to update UI and admin button visibility
     }
+
+    function showPaymentSection(registeredUsername) {
+        authSection.classList.add('hidden');
+        scannerSection.classList.add('hidden');
+        adminPanelModal.classList.add('hidden'); // Ensure admin modal is hidden
+        paymentModal.classList.remove('hidden');
+        paymentMessage.textContent = '';
+        transactionHashInput.value = '';
+        localStorage.setItem('pendingPaymentUsername', registeredUsername);
+    }
+
+    // NEW: Show Admin Panel Modal
+    async function showAdminPanel() {
+        adminPanelModal.classList.remove('hidden');
+        adminMessage.textContent = 'Loading users...';
+        userTableBody.innerHTML = ''; // Clear previous users
+
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            adminMessage.textContent = "Authentication required for admin panel.";
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/users`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                adminMessage.style.color = '#EF4444';
+                adminMessage.textContent = errorData.message || "Failed to fetch users.";
+                return;
+            }
+
+            const users = await response.json();
+            displayUsersInAdminPanel(users);
+            adminMessage.textContent = ''; // Clear message on success
+
+        } catch (error) {
+            adminMessage.style.color = '#EF4444';
+            adminMessage.textContent = `Network error fetching users: ${error.message}`;
+            console.error("Admin panel fetch error:", error);
+        }
+    }
+
+    // NEW: Display users in admin panel table
+    function displayUsersInAdminPanel(users) {
+        userTableBody.innerHTML = '';
+        if (users.length === 0) {
+            userTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-400">No users found.</td></tr>';
+            return;
+        }
+
+        users.forEach(user => {
+            const isPremium = user.isPremium ? 'Yes' : 'No';
+            const trialActive = user.trialActive ? 'Yes' : 'No';
+            const trialExpiry = user.trialExpiryDate ? new Date(user.trialExpiryDate).toLocaleDateString() : 'N/A';
+            const roles = user.roles ? user.roles.join(', ') : 'N/A';
+
+            userTableBody.innerHTML += `
+                <tr class="user-table-row border-b border-gray-600 last:border-b-0">
+                    <td class="py-2 px-4">${user.username}</td>
+                    <td class="py-2 px-4">${user.email}</td>
+                    <td class="py-2 px-4">${isPremium}</td>
+                    <td class="py-2 px-4">${trialActive}</td>
+                    <td class="py-2 px-4">${trialExpiry}</td>
+                    <td class="py-2 px-4 text-sm text-gray-400">${roles}</td>
+                    <td class="py-2 px-4">
+                        <button class="auth-button bg-green-600 hover:bg-green-700 grant-premium-btn" data-username="${user.username}" ${user.isPremium ? 'disabled' : ''}>Grant Premium</button>
+                        <button class="auth-button bg-red-600 hover:bg-red-700 revoke-premium-btn" data-username="${user.username}" ${!user.isPremium ? 'disabled' : ''}>Revoke Premium</button>
+                        <button class="auth-button bg-blue-600 hover:bg-blue-700 activate-trial-btn" data-username="${user.username}" ${user.trialActive ? 'disabled' : ''}>Activate 3-Day Trial</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        // Add event listeners to the action buttons
+        document.querySelectorAll('.grant-premium-btn').forEach(button => {
+            button.addEventListener('click', (e) => grantPremium(e.target.dataset.username));
+        });
+        document.querySelectorAll('.revoke-premium-btn').forEach(button => {
+            button.addEventListener('click', (e) => revokePremium(e.target.dataset.username));
+        });
+        document.querySelectorAll('.activate-trial-btn').forEach(button => {
+            button.addEventListener('click', (e) => activateTrial(e.target.dataset.username));
+        });
+    }
+
+    // NEW: Admin Actions
+    async function grantPremium(username) {
+        adminMessage.textContent = 'Granting premium...';
+        const token = localStorage.getItem('jwtToken');
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/grant-premium/${username}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                adminMessage.style.color = '#48BB78';
+                adminMessage.textContent = data.message;
+                showAdminPanel(); // Refresh user list
+            } else {
+                adminMessage.style.color = '#EF4444';
+                adminMessage.textContent = data.message || `Failed to grant premium to ${username}.`;
+            }
+        } catch (error) {
+            adminMessage.style.color = '#EF4444';
+            adminMessage.textContent = `Network error: ${error.message}`;
+        }
+    }
+
+    async function revokePremium(username) {
+        adminMessage.textContent = 'Revoking premium...';
+        const token = localStorage.getItem('jwtToken');
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/revoke-premium/${username}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                adminMessage.style.color = '#48BB78';
+                adminMessage.textContent = data.message;
+                showAdminPanel(); // Refresh user list
+            } else {
+                adminMessage.style.color = '#EF4444';
+                adminMessage.textContent = data.message || `Failed to revoke premium from ${username}.`;
+            }
+        } catch (error) {
+            adminMessage.style.color = '#EF4444';
+            adminMessage.textContent = `Network error: ${error.message}`;
+        }
+        }
+
+    async function activateTrial(username) {
+        adminMessage.textContent = 'Activating trial...';
+        const token = localStorage.getItem('jwtToken');
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/activate-trial/${username}/3`, { // 3 days for trial
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                adminMessage.style.color = '#48BB78';
+                adminMessage.textContent = data.message;
+                showAdminPanel(); // Refresh user list
+            } else {
+                adminMessage.style.color = '#EF4444';
+                adminMessage.textContent = data.message || `Failed to activate trial for ${username}.`;
+            }
+        } catch (error) {
+            adminMessage.style.color = '#EF4444';
+            adminMessage.textContent = `Network error: ${error.message}`;
+        }
+    }
+
 
     async function fetchUserStatus() {
         const token = localStorage.getItem('jwtToken');
@@ -454,7 +752,6 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error("Failed to fetch user status:", errorData.message);
-                // If token is invalid or expired, force logout
                 if (response.status === 401 || response.status === 403) {
                     showAuthSection();
                     authMessage.textContent = "Session expired or invalid. Please log in again.";
@@ -464,14 +761,20 @@
 
             const userData = await response.json();
             console.log("User status:", userData);
-            // You can use userData (e.g., userData.isPremium, userData.trialActive)
-            // to enable/disable features in the scanner section here.
-            // For example, if not premium and not trial, disable interval buttons other than 4h
+
+            // Check for admin role and show/hide admin button
+            const userRoles = localStorage.getItem('roles') ? JSON.parse(localStorage.getItem('roles')) : [];
+            if (userRoles.includes('ROLE_ADMIN')) {
+                adminPanelButton.classList.remove('hidden');
+            } else {
+                adminPanelButton.classList.add('hidden');
+            }
+
             if (!userData.isPremium && !userData.trialActive) {
                 timeframe1hButton.disabled = true;
                 timeframe1dButton.disabled = true;
                 if (currentTimeframe !== '4h') {
-                    setTimeframe('4h'); // Force 4h for non-premium/non-trial
+                    setTimeframe('4h');
                 }
                 statusMessage.textContent = `Welcome, ${userData.username}! Your trial has expired or you are not premium. Only 4H scans available.`;
             } else if (userData.trialActive) {
@@ -494,7 +797,7 @@
 
     async function handleAuthSubmit(event) {
         event.preventDefault();
-        authMessage.textContent = ''; // Clear previous messages
+        authMessage.textContent = '';
         authSubmitButton.disabled = true;
 
         const username = usernameInput.value;
@@ -502,13 +805,40 @@
         const email = emailInput.value;
         const plan = planSelect.value;
 
-        let endpoint = isRegisterMode ? `${API_BASE_URL}/auth/register` : `${API_BASE_URL}/auth/login`; // Corrected /auth/login
+        let endpoint = `${API_BASE_URL}/auth/login`; // Default to login endpoint
         let body = { username, password };
 
-        if (isRegisterMode) {
+        if (isAdminRegisterMode) { // If in admin registration mode
+            endpoint = `${API_BASE_URL}/auth/register-admin`;
+            body = { username, password, email };
+            // Validate inputs for admin registration
+            if (!username || !password || !email) {
+                authMessage.style.color = '#EF4444';
+                authMessage.textContent = "Username, password, and email are required for admin registration.";
+                authSubmitButton.disabled = false;
+                return;
+            }
+        } else if (isRegisterMode) { // If in regular user registration mode
+            endpoint = `${API_BASE_URL}/auth/register`;
             body.email = email;
             body.plan = plan;
+            // Validate inputs for regular registration
+            if (!username || !password || !email) {
+                authMessage.style.color = '#EF4444';
+                authMessage.textContent = "Username, password, and email are required for registration.";
+                authSubmitButton.disabled = false;
+                return;
+            }
+        } else { // Login mode
+            // Validate inputs for login
+            if (!username || !password) {
+                authMessage.style.color = '#EF4444';
+                authMessage.textContent = "Username and password are required for login.";
+                authSubmitButton.disabled = false;
+                return;
+            }
         }
+
 
         try {
             const response = await fetch(endpoint, {
@@ -520,32 +850,36 @@
             const data = await response.json();
 
             if (response.ok) {
-                authMessage.style.color = '#48BB78'; // Green for success
-                authMessage.textContent = data.message || (isRegisterMode ? "Registration successful!" : "Login successful!");
+                authMessage.style.color = '#48BB78';
 
-                if (!isRegisterMode && data.token) { // If login and token received
-                    localStorage.setItem('jwtToken', data.token);
-                    localStorage.setItem('username', data.username);
-                    localStorage.setItem('userId', data.id); // Store user ID if available
-                    localStorage.setItem('roles', JSON.stringify(data.roles)); // Store roles
-                    showScannerSection();
-                } else if (isRegisterMode) {
-                    // After successful registration, switch to login mode
-                    isRegisterMode = false;
-                    authFormTitle.textContent = 'Login';
-                    authSubmitButton.textContent = 'Login';
-                    emailGroup.classList.add('hidden');
-                    planGroup.classList.add('hidden');
-                    toggleAuthModeButton.textContent = "Don't have an account? Register here.";
-                    authMessage.textContent += " Please log in now.";
+                if (isAdminRegisterMode) { // Admin registration successful
+                    authMessage.textContent = data.message || "Admin registration successful! Please log in as admin.";
+                    showAuthSection(); // Reset to login view
+                } else if (isRegisterMode) { // Regular user registration successful
+                    authMessage.textContent = data.message || "Registration successful!";
+                    if (plan === 'premium') {
+                        showPaymentSection(username);
+                    } else { // Trial registration
+                        showAuthSection(); // Reset to login view
+                        authMessage.textContent += " Please log in now.";
+                    }
+                } else { // Login mode successful
+                    authMessage.textContent = data.message || "Login successful!";
+                    if (data.token) {
+                        localStorage.setItem('jwtToken', data.token);
+                        localStorage.setItem('username', data.username);
+                        localStorage.setItem('userId', data.id);
+                        localStorage.setItem('roles', JSON.stringify(data.roles));
+                        showScannerSection();
+                    }
                 }
 
             } else {
-                authMessage.style.color = '#EF4444'; // Red for error
+                authMessage.style.color = '#EF4444';
                 authMessage.textContent = data.message || "An error occurred.";
             }
         } catch (error) {
-            authMessage.style.color = '#EF4444'; // Red for error
+            authMessage.style.color = '#EF4444';
             authMessage.textContent = `Network error: ${error.message}. Please ensure backend is running.`;
             console.error("Auth fetch error:", error);
         } finally {
@@ -554,6 +888,7 @@
     }
 
     function toggleAuthFormMode() {
+        isAdminRegisterMode = false; // NEW: Always reset admin register mode when toggling
         isRegisterMode = !isRegisterMode;
         if (isRegisterMode) {
             authFormTitle.textContent = 'Register';
@@ -561,19 +896,98 @@
             emailGroup.classList.remove('hidden');
             planGroup.classList.remove('hidden');
             toggleAuthModeButton.textContent = "Already have an account? Login here.";
+            registerAdminButton.classList.add('hidden'); // Hide admin button when in regular register mode
         } else {
             authFormTitle.textContent = 'Login';
             authSubmitButton.textContent = 'Login';
             emailGroup.classList.add('hidden');
             planGroup.classList.add('hidden');
             toggleAuthModeButton.textContent = "Don't have an account? Register here.";
+            registerAdminButton.classList.remove('hidden'); // Show admin button when in login mode
         }
-        authMessage.textContent = ''; // Clear messages on mode switch
+        authMessage.textContent = '';
+        usernameInput.value = ''; // Clear inputs on mode switch
+        passwordInput.value = '';
+        emailInput.value = '';
     }
+
+    // NEW: Function to switch to Admin Registration Mode
+    function switchToAdminRegisterMode() {
+        isRegisterMode = true; // Admin registration is a type of registration
+        isAdminRegisterMode = true; // Set the specific admin registration flag
+        authFormTitle.textContent = 'Register Admin';
+        authSubmitButton.textContent = 'Register Admin';
+        emailGroup.classList.remove('hidden');
+        planGroup.classList.add('hidden'); // Hide plan selection for admin
+        toggleAuthModeButton.textContent = "Go back to regular Login/Register.";
+        registerAdminButton.classList.add('hidden'); // Hide the admin button itself
+        authMessage.textContent = '';
+        usernameInput.value = ''; // Clear inputs
+        passwordInput.value = '';
+        emailInput.value = '';
+    }
+
 
     function handleLogout() {
         showAuthSection();
         authMessage.textContent = "You have been logged out.";
+    }
+
+    // --- Payment Functions ---
+    async function handleSubmitPaymentProof(event) {
+        event.preventDefault();
+        paymentMessage.textContent = '';
+        submitPaymentProofButton.disabled = true;
+
+        const txHash = transactionHashInput.value;
+        const userId = localStorage.getItem('pendingPaymentUsername');
+
+        if (!txHash || !userId) {
+            paymentMessage.style.color = '#EF4444';
+            paymentMessage.textContent = "Transaction hash and user information are required.";
+            submitPaymentProofButton.disabled = false;
+            return;
+        }
+
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            paymentMessage.style.color = '#EF4444';
+            paymentMessage.textContent = "Error: No authentication token found. Please log in first.";
+            submitPaymentProofButton.disabled = false;
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/payment/submit-proof`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ transactionHash: txHash, userId: userId })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                paymentMessage.style.color = '#48BB78';
+                paymentMessage.textContent = data.message || "Payment proof submitted successfully! Your premium access will be activated soon.";
+                localStorage.removeItem('pendingPaymentUsername');
+                setTimeout(() => {
+                    showAuthSection();
+                    authMessage.textContent = "Payment proof submitted. Please log in to check your status later.";
+                }, 3000);
+            } else {
+                paymentMessage.style.color = '#EF4444';
+                paymentMessage.textContent = data.message || "Failed to submit payment proof.";
+            }
+        } catch (error) {
+            paymentMessage.style.color = '#EF4444';
+            paymentMessage.textContent = `Network error: ${error.message}. Please try again.`;
+            console.error("Payment proof fetch error:", error);
+        } finally {
+            submitPaymentProofButton.disabled = false;
+        }
     }
 
 
@@ -584,7 +998,7 @@
 
         let filteredByPriceDeviation = resultsToDisplay.filter(coin => {
             if (coin.orderBlockType === 'None' || coin.orderBlockPrice === null || coin.orderBlockPrice === undefined) {
-                return true; // Always show 'None' or results without a specific OB price
+                return true;
             }
             const priceDiff = Math.abs(coin.orderBlockPrice - coin.currentPrice);
             const percentageDiff = (priceDiff / coin.currentPrice) * 100;
@@ -608,8 +1022,8 @@
                 <div class="coin-card ${orderBlockTypeClass}"
                      data-symbol="${coin.id}"
                      data-timeframe="${coin.timeframe}"
-                     data-ob-type="${coin.orderBlockType}"
-                     data-ob-price="${coin.orderBlockPrice || 'N/A'}"
+                     data-ob-type="${coin.obType}"
+                     data-ob-price="${coin.obCandlePrice || 'N/A'}"
                      data-coin-name="${coin.name}"
                      data-ob-open="${coin.obCandleOpen || ''}"
                      data-ob-high="${coin.obCandleHigh || ''}"
@@ -638,12 +1052,10 @@
                             Order Block Price Level: <span class="text-white font-bold">${obPriceDisplay}</span>
                         </p>
                         <p class="text-gray-400 text-sm mb-4">${coin.details || 'No additional details.'}</p>
-                        <!-- Removed individual chart button, now handled by card click -->
                     </div>
                 </div>
             `;
         });
-        // Add event listeners to newly created coin cards
         document.querySelectorAll('.coin-card').forEach(card => {
             card.addEventListener('click', openChartModal);
         });
@@ -656,7 +1068,6 @@
         } else {
             filtered = allScanResults.filter(coin => coin.orderBlockType === currentFilter);
         }
-        // Apply price deviation filter always
         displayResults(filtered);
         statusMessage.textContent = `Displaying ${filtered.length} results (filtered by: ${currentFilter}, max deviation: ${maxPriceDeviationPercent}%).`;
         if (currentFilter === 'All') {
@@ -703,22 +1114,20 @@
     function clearResults() {
         allScanResults = [];
         currentFilter = 'All';
-        setFilter('All'); // Reset filter to 'All'
+        setFilter('All');
         resultsContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Results cleared.</p>';
         statusMessage.textContent = 'Click "Scan Coins" to initiate a scan.';
         errorMessage.textContent = '';
     }
 
     async function fetchOrderBlocks() {
-        // Check for token before fetching
         const token = localStorage.getItem('jwtToken');
         if (!token) {
             errorMessage.textContent = "Please log in to use the scanner.";
-            showAuthSection(); // Redirect to login if no token
+            showAuthSection();
             return;
         }
 
-        // Disable all interactive elements during scan
         scanButton.disabled = true;
         clearButton.disabled = true;
         document.querySelectorAll('.filter-button, .timeframe-button, .sensitivity-button').forEach(btn => btn.disabled = true);
@@ -729,12 +1138,11 @@
         buttonText.textContent = 'Scanning...';
         statusMessage.textContent = `Fetching real-time data and scanning for ${currentTimeframe.toUpperCase()} order blocks via backend...`;
         errorMessage.textContent = '';
-        resultsContainer.innerHTML = ''; // Clear previous results before new fetch
+        resultsContainer.innerHTML = '';
 
         const selectedPreset = sensitivityPresets[currentSensitivity];
         if (!selectedPreset) {
             errorMessage.textContent = "Invalid sensitivity preset selected.";
-            // Re-enable elements
             scanButton.disabled = false;
             clearButton.disabled = false;
             document.querySelectorAll('.filter-button, .timeframe-button, .sensitivity-button').forEach(btn => btn.disabled = false);
@@ -744,22 +1152,21 @@
             return;
         }
 
-        // All parameters now come directly from the selectedPreset
         const { minBodyRatio, minPriceChange, volumeFactor, requireBOS, requireC3ClosePastC2, requireFVG, requireUnmitigated, minFvgDepthRatio } = selectedPreset;
 
 
         try {
             const response = await fetch(`${API_BASE_URL}/scan-order-blocks?interval=${currentTimeframe}&minBodyRatio=${minBodyRatio}&minPriceChange=${minPriceChange}&volumeFactor=${volumeFactor}&requireBOS=${requireBOS}&requireC3ClosePastC2=${requireC3ClosePastC2}&requireFVG=${requireFVG}&requireUnmitigated=${requireUnmitigated}&minFvgDepthRatio=${minFvgDepthRatio}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}` // Include JWT for authentication
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (!response.ok) {
                 let errorDetail = `Status: ${response.status} ${response.statusText || 'Unknown Error'}`;
                 try {
-                    const errorBody = await response.text();
-                    errorDetail += `. Response Body: ${errorBody.substring(0, Math.min(errorBody.length, 200))}`;
+                    const errorBody = await response.json(); // Changed to .json() to parse JSON error messages
+                    errorDetail = errorBody.message || JSON.stringify(errorBody); // Use message or stringify the whole object
                 } catch (bodyError) {
                     errorDetail += `. Could not read response body: ${bodyError.message}`;
                 }
@@ -768,16 +1175,15 @@
 
             const data = await response.json();
             allScanResults = data;
-            filterResults(); // Apply current filter and new price deviation filter to new results
+            filterResults();
             statusMessage.textContent = `Scan complete! Found ${data.length} total results for ${currentTimeframe.toUpperCase()} timeframe with "${currentSensitivity}" sensitivity. Displaying ${resultsContainer.children.length} results after price deviation filter.`;
 
         } catch (err) {
             statusMessage.textContent = '';
-            errorMessage.textContent = `Connection/Data Error: ${err.message}. Please ensure your Java backend is running and accessible at "${API_BASE_URL}".`;
+            errorMessage.textContent = `Connection/Data Error: ${err.message}. Please ensure backend is running.`;
             console.error("Frontend fetch error:", err);
-            allScanResults = []; // Clear results on error
+            allScanResults = [];
         } finally {
-            // Re-enable all interactive elements
             scanButton.disabled = false;
             clearButton.disabled = false;
             document.querySelectorAll('.filter-button, .timeframe-button, .sensitivity-button').forEach(btn => btn.disabled = false);
@@ -789,7 +1195,7 @@
 
     // --- Chart Modal Functions ---
     function openChartModal(event) {
-      const card = event.currentTarget; // The clicked coin-card div
+      const card = event.currentTarget;
       const symbol = card.dataset.symbol;
       const timeframe = card.dataset.timeframe;
       const obType = card.dataset.obType;
@@ -803,7 +1209,6 @@
       const obZoneEnd = card.dataset.obZoneEnd;
 
 
-      // Set modal title and OB info
       modalTitle.textContent = `${coinName} (${symbol}) Chart - ${timeframe.toUpperCase()}`;
 
       let obZoneInfo = '';
@@ -817,23 +1222,20 @@
           'text-gray-400'
       }">${obType}</span> | Price Level: <span class="text-white font-bold">${obPrice !== 'N/A' ? `$${parseFloat(obPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}` : 'N/A'}</span>${obZoneInfo}`;
 
-      // Determine TradingView interval string
-      let tvInterval = '240'; // Default for 4h
+      let tvInterval = '240';
       if (timeframe === '1h') {
           tvInterval = '60';
       } else if (timeframe === '1d') {
           tvInterval = 'D';
       }
 
-      // Clear previous widget content
       document.getElementById('tradingview_chart').innerHTML = '';
 
-      // Create a new TradingView widget instance
       new TradingView.widget(
         {
           "width": "100%",
           "height": "100%",
-          "symbol": `BINANCE:${symbol}`, // Binance Futures symbol
+          "symbol": `BINANCE:${symbol}`,
           "interval": tvInterval,
           "timezone": "Etc/UTC",
           "theme": "dark",
@@ -846,24 +1248,22 @@
         }
       );
 
-      // Update the external TradingView link
       tradingViewLink.href = `https://www.tradingview.com/chart/?symbol=BINANCE:${symbol}.P&interval=${tvInterval}`;
 
-      chartModal.classList.remove('hidden'); // Show the modal
+      chartModal.classList.remove('hidden');
     }
 
     function closeChartModal() {
-      chartModal.classList.add('hidden'); // Hide the modal
+      chartModal.classList.add('hidden');
       document.getElementById('tradingview_chart').innerHTML = '';
     }
 
 
     // --- Initial Setup Calls ---
-    displayResults([]); // Clear results on initial load
-    setTimeframe(currentTimeframe); // Set initial timeframe button active
-    setSensitivity(currentSensitivity); // Set initial sensitivity button active
+    displayResults([]);
+    setTimeframe(currentTimeframe);
+    setSensitivity(currentSensitivity);
 
-    // Check if user is already logged in (e.g., from a previous session)
     if (localStorage.getItem('jwtToken')) {
         showScannerSection();
     } else {
@@ -891,17 +1291,17 @@
         const newValue = parseFloat(event.target.value);
         if (!isNaN(newValue) && newValue >= 0 && newValue <= 100) {
             maxPriceDeviationPercent = newValue;
-            filterResults(); // Re-apply filters with the new deviation
+            filterResults();
         } else {
             errorMessage.textContent = "Please enter a valid percentage between 0 and 100.";
-            event.target.value = maxPriceDeviationPercent; // Revert to last valid value
+            event.target.value = maxPriceDeviationPercent;
         }
     });
 
     closeModalButton.addEventListener('click', closeChartModal);
     chartModal.addEventListener('click', (event) => {
       if (event.target === chartModal) {
-        closeChartModal(); // Use closeChartModal for consistency
+        closeChartModal();
       }
     });
 
@@ -909,6 +1309,27 @@
     authForm.addEventListener('submit', handleAuthSubmit);
     toggleAuthModeButton.addEventListener('click', toggleAuthFormMode);
     logoutButton.addEventListener('click', handleLogout);
+    registerAdminButton.addEventListener('click', switchToAdminRegisterMode);
+
+
+    // Payment Event Listeners
+    closePaymentModalButton.addEventListener('click', () => paymentModal.classList.add('hidden'));
+    paymentModal.addEventListener('click', (event) => {
+        if (event.target === paymentModal) {
+            paymentModal.classList.add('hidden');
+        }
+    });
+    paymentProofForm.addEventListener('submit', handleSubmitPaymentProof);
+
+    // Admin Panel Event Listeners (NEW)
+    adminPanelButton.addEventListener('click', showAdminPanel);
+    closeAdminPanelModalButton.addEventListener('click', () => adminPanelModal.classList.add('hidden'));
+    adminPanelModal.addEventListener('click', (event) => {
+        if (event.target === adminPanelModal) {
+            adminPanelModal.classList.add('hidden');
+        }
+    });
+
 
     // Load TradingView widget script dynamically
     const script = document.createElement('script');
@@ -919,3 +1340,4 @@
 </script>
 </body>
 </html>
+    

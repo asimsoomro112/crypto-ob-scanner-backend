@@ -4,7 +4,6 @@ import com.example.cryptoscannerbackend.model.ERole;
 import com.example.cryptoscannerbackend.model.User;
 import com.example.cryptoscannerbackend.repository.UserRepository;
 import com.example.cryptoscannerbackend.security.jwt.JwtUtils;
-import com.example.cryptoscannerbackend.security.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,6 +31,9 @@ public class AuthService {
     @Autowired
     JwtUtils jwtUtils;
 
+    @Autowired
+    private UserService userService;
+
     public User registerUser(String username, String email, String password, String plan) {
         if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Error: Username is already taken!");
@@ -41,25 +43,41 @@ public class AuthService {
         }
 
         User user = new User(username, email, encoder.encode(password));
-        Set<ERole> roles = user.getRoles(); // Get the default ROLE_USER added in constructor
 
-        // Handle plan-based role assignment
         if ("trial".equalsIgnoreCase(plan)) {
-            roles.add(ERole.ROLE_TRIAL);
-            user.setTrialStartDate(LocalDateTime.now());
-            user.setTrialEndDate(LocalDateTime.now().plusDays(3)); // 3-day trial
+            user = userRepository.save(user);
+            userService.activateTrial(user.getUsername(), 3);
+        } else if ("premium".equalsIgnoreCase(plan)) {
             user.setPremium(false);
-        } else if ("premium".equalsIgnoreCase(plan)) { // For direct premium sign-up if you add that later
-            roles.add(ERole.ROLE_PREMIUM);
-            user.setPremium(true);
+            userRepository.save(user);
         } else {
-            // Default to basic user if no specific plan is provided
             user.setPremium(false);
+            userRepository.save(user);
         }
-        user.setRoles(roles); // Ensure roles are set back
-
-        return userRepository.save(user);
+        return user;
     }
+
+    // TEMPORARY METHOD FOR ADMIN REGISTRATION - REMOVE AFTER FIRST ADMIN IS CREATED
+
+        public User registerAdmin(String username, String email, String password) {
+            if (userRepository.existsByUsername(username)) {
+                throw new RuntimeException("Error: Username is already taken!");
+            }
+            if (userRepository.existsByEmail(email)) {
+                throw new RuntimeException("Error: Email is already in use!");
+            }
+
+            User adminUser = new User(username, email, encoder.encode(password));
+            Set<ERole> roles = adminUser.getRoles();
+            roles.add(ERole.ROLE_ADMIN);
+            adminUser.setRoles(roles);
+            adminUser.setPremium(true);
+            adminUser.setTrialStartDate(null);
+            adminUser.setTrialEndDate(null);
+
+            return userRepository.save(adminUser);
+        }
+
 
     public String authenticateUser(String username, String password) {
         Authentication authentication = authenticationManager.authenticate(
@@ -69,3 +87,4 @@ public class AuthService {
         return jwtUtils.generateJwtToken(authentication);
     }
 }
+    

@@ -28,10 +28,10 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*", maxAge = 3600) // Temporarily allow all origins for local testing, change to "https://ccscanner.netlify.app" for production
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class AuthController {
     @Autowired
-    AuthService authService; // Use the service
+    AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
@@ -48,7 +48,24 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/login") // Changed from /signin to /login to match frontend
+    // TEMPORARY ADMIN REGISTRATION ENDPOINT - REMOVE AFTER FIRST ADMIN IS CREATED
+
+        @PostMapping("/register-admin")
+        public ResponseEntity<?> registerAdmin(@RequestBody RegisterRequest registerRequest) {
+            try {
+                User adminUser = authService.registerAdmin(
+                        registerRequest.getUsername(),
+                        registerRequest.getEmail(),
+                        registerRequest.getPassword()
+                );
+                return ResponseEntity.ok(new MessageResponse("Admin user registered successfully! User ID: " + adminUser.getId()));
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+            }
+        }
+
+
+    @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {
             String jwt = authService.authenticateUser(loginRequest.getUsername(), loginRequest.getPassword());
